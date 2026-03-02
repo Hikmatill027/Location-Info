@@ -1,10 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
-import { Message, GroundingChunk } from "../types";
+import { Message, GroundingChunk, Language } from "../types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function getChatResponse(
   message: string,
+  language: Language = 'en',
   location?: { latitude: number; longitude: number }
 ): Promise<{ text: string; groundingChunks: GroundingChunk[] }> {
   if (!GEMINI_API_KEY) {
@@ -13,11 +14,18 @@ export async function getChatResponse(
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
   
+  const languageNames = {
+    en: 'English',
+    uz: 'Uzbek',
+    ru: 'Russian'
+  };
+
   // Use gemini-2.5-flash for Google Maps grounding
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: message,
     config: {
+      systemInstruction: `You are a helpful location assistant. Please provide your response in ${languageNames[language]} language.`,
       tools: [{ googleMaps: {} }, { googleSearch: {} }],
       toolConfig: location ? {
         retrievalConfig: {

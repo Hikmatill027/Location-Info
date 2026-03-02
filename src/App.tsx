@@ -1,15 +1,51 @@
 import { useState, useEffect } from 'react';
-import { Message } from './types';
+import { Message, Language } from './types';
 import { getChatResponse } from './services/geminiService';
 import ChatInterface from './components/ChatInterface';
 import MapDisplay from './components/MapDisplay';
 import { MapPin, Info, Navigation2 } from 'lucide-react';
+
+const TRANSLATIONS = {
+  en: {
+    aboutTitle: "About GeoChat AI",
+    aboutText: "This assistant uses real-time data from Google Maps and Search to provide accurate local information. Ask about nearby places, directions, or local history.",
+    systemActive: "System Active",
+    groundingEnabled: "Grounding Enabled",
+    detectingLocation: "Detecting your location...",
+    locationDenied: "Location access denied. Some features may be limited.",
+    geoNotSupported: "Geolocation is not supported by your browser.",
+    errorOccurred: "Sorry, I encountered an error. Please try again."
+  },
+  uz: {
+    aboutTitle: "GeoChat AI haqida",
+    aboutText: "Ushbu yordamchi aniq mahalliy ma'lumotlarni taqdim etish uchun Google Xaritalar va Qidiruvdan real vaqt rejimidagi ma'lumotlardan foydalanadi. Yaqin atrofdagi joylar, yo'nalishlar yoki mahalliy tarix haqida so'rang.",
+    systemActive: "Tizim faol",
+    groundingEnabled: "Grounding yoqilgan",
+    detectingLocation: "Joylashuvingiz aniqlanmoqda...",
+    locationDenied: "Joylashuvga ruxsat berilmadi. Ba'zi funksiyalar cheklangan bo'lishi mumkin.",
+    geoNotSupported: "Brauzeringiz geolokatsiyani qo'llab-quvvatlamaydi.",
+    errorOccurred: "Kechirasiz, xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring."
+  },
+  ru: {
+    aboutTitle: "О GeoChat AI",
+    aboutText: "Этот помощник использует данные Google Карт и Поиска в реальном времени для предоставления точной местной информации. Спрашивайте о близлежащих местах, маршрутах или местной истории.",
+    systemActive: "Система активна",
+    groundingEnabled: "Grounding включен",
+    detectingLocation: "Определение вашего местоположения...",
+    locationDenied: "Доступ к местоположению отклонен. Некоторые функции могут быть ограничены.",
+    geoNotSupported: "Геолокация не поддерживается вашим браузером.",
+    errorOccurred: "Извините, произошла ошибка. Пожалуйста, попробуйте еще раз."
+  }
+};
 
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [language, setLanguage] = useState<Language>('en');
+
+  const t = TRANSLATIONS[language];
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -22,13 +58,13 @@ export default function App() {
         },
         (err) => {
           console.error("Error getting location:", err);
-          setError("Location access denied. Some features may be limited.");
+          setError(t.locationDenied);
         }
       );
     } else {
-      setError("Geolocation is not supported by your browser.");
+      setError(t.geoNotSupported);
     }
-  }, []);
+  }, [t.locationDenied, t.geoNotSupported]);
 
   const handleSendMessage = async (text: string) => {
     const userMessage: Message = {
@@ -42,7 +78,7 @@ export default function App() {
     setIsLoading(true);
 
     try {
-      const { text: responseText, groundingChunks } = await getChatResponse(text, location || undefined);
+      const { text: responseText, groundingChunks } = await getChatResponse(text, language, location || undefined);
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -58,7 +94,7 @@ export default function App() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        text: "Sorry, I encountered an error. Please try again.",
+        text: t.errorOccurred,
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -81,7 +117,7 @@ export default function App() {
                 <div className="animate-pulse p-4 bg-zinc-100 rounded-full">
                   <Navigation2 className="w-8 h-8" />
                 </div>
-                <p className="text-sm font-medium">Detecting your location...</p>
+                <p className="text-sm font-medium">{t.detectingLocation}</p>
               </div>
             )}
           </div>
@@ -93,10 +129,9 @@ export default function App() {
                 <Info className="w-5 h-5 text-blue-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-zinc-900">About GeoChat AI</h3>
+                <h3 className="font-semibold text-zinc-900">{t.aboutTitle}</h3>
                 <p className="text-sm text-zinc-600 mt-1 leading-relaxed">
-                  This assistant uses real-time data from Google Maps and Search to provide accurate local information. 
-                  Ask about nearby places, directions, or local history.
+                  {t.aboutText}
                 </p>
                 {error && (
                   <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-2">
@@ -107,11 +142,11 @@ export default function App() {
                 <div className="mt-4 flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">System Active</span>
+                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">{t.systemActive}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Grounding Enabled</span>
+                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">{t.groundingEnabled}</span>
                   </div>
                 </div>
               </div>
@@ -124,7 +159,9 @@ export default function App() {
           <ChatInterface 
             messages={messages} 
             onSendMessage={handleSendMessage} 
-            isLoading={isLoading} 
+            isLoading={isLoading}
+            language={language}
+            onLanguageChange={setLanguage}
           />
         </div>
 

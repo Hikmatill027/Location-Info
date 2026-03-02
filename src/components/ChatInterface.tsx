@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, MapPin, Search, ExternalLink, Loader2 } from 'lucide-react';
+import { Send, MapPin, Search, ExternalLink, Loader2, Languages } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { Message, GroundingChunk } from '../types';
+import { Message, GroundingChunk, Language } from '../types';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -9,15 +9,61 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const TRANSLATIONS = {
+  en: {
+    title: "GeoChat AI",
+    subtitle: "Real-time Location Assistant",
+    placeholder: "Ask about a location...",
+    emptyTitle: "Ask anything about your surroundings",
+    emptySubtitle: '"Find Italian restaurants nearby" or "What\'s the history of this area?"',
+    thinking: "Thinking...",
+    whereAmI: "Where am I?",
+    viewOnMaps: "View on Google Maps",
+    source: "Source"
+  },
+  uz: {
+    title: "GeoChat AI",
+    subtitle: "Real-vaqtda joylashuv yordamchisi",
+    placeholder: "Joylashuv haqida so'rang...",
+    emptyTitle: "Atrofingiz haqida xohlagan narsani so'rang",
+    emptySubtitle: '"Yaqin atrofdagi italyan restoranlarini toping" yoki "Ushbu hududning tarixi qanday?"',
+    thinking: "O'ylamoqda...",
+    whereAmI: "Men qayerdaman?",
+    viewOnMaps: "Google Xaritalarda ko'rish",
+    source: "Manba"
+  },
+  ru: {
+    title: "GeoChat AI",
+    subtitle: "Помощник по местоположению в реальном времени",
+    placeholder: "Спросите о местоположении...",
+    emptyTitle: "Спрашивайте что угодно о вашем окружении",
+    emptySubtitle: '"Найдите итальянские рестораны поблизости" или "Какова история этого района?"',
+    thinking: "Думаю...",
+    whereAmI: "Где я?",
+    viewOnMaps: "Посмотреть на Google Картах",
+    source: "Источник"
+  }
+};
+
 interface ChatInterfaceProps {
   messages: Message[];
   onSendMessage: (text: string) => void;
   isLoading: boolean;
+  language: Language;
+  onLanguageChange: (lang: Language) => void;
 }
 
-export default function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterfaceProps) {
+export default function ChatInterface({ 
+  messages, 
+  onSendMessage, 
+  isLoading, 
+  language, 
+  onLanguageChange 
+}: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const t = TRANSLATIONS[language];
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -42,9 +88,27 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
             <MapPin className="text-white w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-semibold text-zinc-900 leading-none">GeoChat AI</h2>
-            <p className="text-xs text-zinc-500 mt-1">Real-time Location Assistant</p>
+            <h2 className="font-semibold text-zinc-900 leading-none">{t.title}</h2>
+            <p className="text-xs text-zinc-500 mt-1">{t.subtitle}</p>
           </div>
+        </div>
+
+        {/* Language Selector */}
+        <div className="flex items-center gap-1 bg-zinc-200/50 p-1 rounded-lg">
+          {(['en', 'uz', 'ru'] as Language[]).map((lang) => (
+            <button
+              key={lang}
+              onClick={() => onLanguageChange(lang)}
+              className={cn(
+                "px-2 py-1 text-[10px] font-bold uppercase rounded-md transition-all",
+                language === lang 
+                  ? "bg-white text-zinc-900 shadow-sm" 
+                  : "text-zinc-500 hover:text-zinc-700"
+              )}
+            >
+              {lang}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -59,8 +123,8 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
               <Search className="w-8 h-8 text-zinc-400" />
             </div>
             <div className="max-w-xs">
-              <p className="text-sm font-medium text-zinc-900">Ask anything about your surroundings</p>
-              <p className="text-xs text-zinc-500 mt-1">"Find Italian restaurants nearby" or "What's the history of this area?"</p>
+              <p className="text-sm font-medium text-zinc-900">{t.emptyTitle}</p>
+              <p className="text-xs text-zinc-500 mt-1">{t.emptySubtitle}</p>
             </div>
           </div>
         )}
@@ -114,7 +178,7 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
         {isLoading && (
           <div className="flex items-center gap-2 text-zinc-400">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-xs font-medium">Thinking...</span>
+            <span className="text-xs font-medium">{t.thinking}</span>
           </div>
         )}
       </div>
@@ -127,9 +191,9 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onSendMessage('Where am I?')}
+            onClick={() => onSendMessage(t.whereAmI)}
             disabled={isLoading}
-            title="Where am I?"
+            title={t.whereAmI}
             className="p-3 bg-zinc-100 text-zinc-600 rounded-xl hover:bg-zinc-200 disabled:opacity-50 transition-colors flex-shrink-0"
           >
             <MapPin className="w-5 h-5" />
@@ -139,7 +203,7 @@ export default function ChatInterface({ messages, onSendMessage, isLoading }: Ch
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about a location..."
+              placeholder={t.placeholder}
               className="w-full pl-4 pr-12 py-3 bg-zinc-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none"
               disabled={isLoading}
             />
